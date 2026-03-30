@@ -17,21 +17,44 @@ variable "github_actor" {
   type        = string
 }
 
+# PostgreSQL Managed Database
+resource "render_postgres" "postgres" {
+  name   = "postgres-${var.github_actor}"
+  plan   = "free"
+  region = "frankfurt"
+}
+
+# Flask Backend
 resource "render_web_service" "flask_app" {
   name   = "flask-render-iac-${var.github_actor}"
   plan   = "free"
   region = "frankfurt"
-
   runtime_source = {
     image = {
       image_url = var.image_url
       tag       = var.image_tag
     }
   }
-
   env_vars = {
     ENV = {
       value = "production"
     }
+    DATABASE_URL = {
+      value = render_postgres.postgres.connection_string
+    }
   }
+}
+
+# Adminer Web Service
+resource "render_web_service" "adminer" {
+  name   = "adminer-${var.github_actor}"
+  plan   = "free"
+  region = "frankfurt"
+  runtime_source = {
+    image = {
+      image_url = "ghcr.io/shyim/adminerevo"
+      tag       = "latest"
+    }
+  }
+  env_vars = {}
 }
