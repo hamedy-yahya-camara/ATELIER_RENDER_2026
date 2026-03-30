@@ -1,7 +1,11 @@
-from flask import Flask
+from flask import Flask, jsonify
 import os
+import psycopg2
 
 app = Flask(__name__)
+
+def get_db():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
 
 @app.route("/")
 def home():
@@ -22,6 +26,18 @@ def info():
 @app.route("/env")
 def env():
     return {"env": os.getenv("ENV")}
+
+@app.route("/db")
+def db():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT version();")
+        version = cur.fetchone()
+        conn.close()
+        return {"database": "connected", "version": str(version)}
+    except Exception as e:
+        return {"database": "error", "message": str(e)}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
